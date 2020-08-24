@@ -12,16 +12,16 @@
 #define new DEBUG_NEW
 #endif
 
-#define CLASS2 0x1100
-#define Keyword2000 0x1200
-#define GMLAN 0x1300
-#define RGM_LAN_250KBd 0x1400
-#define KWP2000_on_CAN 0x1500
+#define CLASS2 0x1000 //0x1100
+#define Keyword2000 0x1300 // 0x1200
+#define GMLAN 0x300 //0x1300
+#define RGM_LAN_250KBd 0x1300  //0x1400
+#define KWP2000_on_CAN 0x1300  // 0x1500
 
 // The one and only application object
 
 CWinApp theApp;
-
+boolean debug = false;
 using namespace std;
 void SwapShort( unsigned short& val )
 {
@@ -47,12 +47,17 @@ int  sub_10001073(int a1, int a2)
 	temp1 = temp1 >> lowBYTE;
 	temp2 = temp2 << ( 16 - lowBYTE );
 	*(_WORD *)a1 = (temp1 | temp2);
+	if (debug) printf("Step : tempseed1 == seed >> 0x%X\n", lowBYTE);
+	if (debug) printf("Step : tempseed2 == seed << 0x%X\n", (16 - lowBYTE));
+	if (debug) printf("Step : seed == (tempseed1 | tempseed2)\n");
+	
 	return 0;
 }
 int  sub_1000110C(int a1, int a2)
 {
 	unsigned short temp = *(unsigned short*)a2;
 	*(_WORD *)a1 += temp;
+	if (debug) printf("Step = seed += 0x%X\n", temp);
 	return 0;
 }
 int  sub_1000109C(int a1, int a2)
@@ -63,47 +68,61 @@ int  sub_1000109C(int a1, int a2)
 	unsigned short v6; // cx@1
 	int v7; // ecx@1
 
-	v6 = *(_WORD *)a1;
+	v6 = *(_WORD *)a1;  // seed
 	SwapShort(v6);
+	if (debug) printf("Step = Byte Swap seed\n");
 	v4 = v6;
 	v7 = a2;
 	*(_WORD *)a1 = v4;
 	v2 = *(BYTE *)v7;
 	v3 = *(BYTE *)(v7 + 1);
-	if ( v2 >= v3 )
-		*(_WORD *)a1 = v4 + v3 + (v2 << 8);
+	if (v2 >= v3)
+	{
+		*(_WORD*)a1 = v4 + v3 + (v2 << 8);
+		if (debug) printf("Step : seed+= 0x%X\n", v3 + (v2 << 8));
+	}
 	else
-		*(_WORD *)a1 = v4 + v2 + (v3 << 8);
+	{
+		*(_WORD*)a1 = v4 + v2 + (v3 << 8);
+		if (debug) printf("Step : seed+= 0x%X\n", v2 + (v3 << 8));
+	}
 	return 0;
 }
 int  sub_100010EC(int a1, int a2)
 {
 	unsigned short temp = *(unsigned short*)a2;
 	SwapShort(temp);
+	if (debug) printf("Step : Byte Swap seed\n");
 	*(_WORD *)a1 -= temp;
+	if (debug) printf("Step : seed-= 0x%X\n", temp);
 	return 0;
 }
 int  sub_10001131(int a1, int a2)
 {
 	unsigned short temp = *(unsigned short*)a2;
 	*(_WORD *)a1 = (*(_WORD *)a1-temp);
+	if (debug) printf("Step : seed-= 0x%X\n", temp);
 	return 0;
 }
 int  sub_10001183(int a1, int a2)
 {
 	*(_WORD *)a1 |= *(BYTE *)a2 + (*(BYTE *)(a2 + 1) << 8);
+	if (debug) printf("Step : Seed |= 0x%X  \n", *(BYTE*)a2 + (*(BYTE*)(a2 + 1) << 8));
 	return 0;
 }
 int  sub_10001151(int a1, int a2)
 {
 	*(_WORD *)a1 = (*(_WORD *)a1 << 8 & 0xff00) | (*(_WORD *)a1 >> 8 & 0xff);
+	if (debug) printf("Step : Byte Swap Seed\n");
 	return 0;
 }
 int  add(int seed, int a2)
 {
 	unsigned short temp = *(unsigned short*)a2;
 	SwapShort(temp);
+	// if (debug) printf("Step : Byte Swap seed\n");
 	*(_WORD *)seed += temp;
+	if (debug) printf("Step = Seed += 0x%X \n", temp);
 	return 0;
 }
 int  sub_10001028(int a1, int a2)
@@ -115,14 +134,18 @@ int  sub_10001028(int a1, int a2)
 	low = *(unsigned char *)v4;
 	high = *(unsigned char *)++v4;
 	v2 = ~*(_WORD *)a1;
-	*(_WORD *)a1 = v2;
-	if ( low < high )
-		*(_WORD *)a1 = v2 + 1;
+	if (debug) printf("Step : seed = ~seed\n");
+	*(_WORD *)a1 = v2;      ///////////////////////////////////////////////////////
+	if (low < high) {
+		*(_WORD*)a1 = v2 + 1;
+		if (debug) printf("Step : seed += 1\n");
+	               }
 	return 0;
 }
 int __stdcall sub_1000115E(int a1, int a2)
 {
 	*(_WORD *)a1 &= *(BYTE *)a2 + (*(BYTE *)(a2 + 1) << 8);
+	if (debug) printf("Step : seed &= 0x%X  \n", *(BYTE*)a2 + (*(BYTE*)(a2 + 1) << 8));
 	return 0;
 }
 int __stdcall sub_1000104B(int a1, int a2)
@@ -136,12 +159,15 @@ int __stdcall sub_1000104B(int a1, int a2)
 	temp1 = temp1 << highBYTE;
 	temp2 = temp2 >> ( 16 - highBYTE );
 	*(_WORD *)a1 = ( temp1 | temp2 );
+	if (debug) printf("Step : tempseed1 == seed << 0x%X\n", highBYTE);
+	if (debug) printf("Step : tempseed2 == seed >> 0x%X\n", (16 - highBYTE));
+	if (debug) printf("Step : seed == (tempseed1 | tempseed2)\n");
 
 	return 0;
 }
 
 int CalcKey(unsigned short  seed/*Seed*/, unsigned short  magicWord/*algo #*/, unsigned short  *ptr_Key/*ptr key*/)
-{
+ {
 	__int16 v4; // cx@1
 	char v5; // bl@1
 	int v6; // edi@1
@@ -154,16 +180,19 @@ int CalcKey(unsigned short  seed/*Seed*/, unsigned short  magicWord/*algo #*/, u
 	int v13; // ecx@28
 	char v15; // zf@35
 	int v16; // [sp+8h] [bp-4h]@5
-
+ //   if (debug)	printf("Calc Key section starting\n");
 	v6 = 0;//this;
 	v4 = (_WORD)magicWord >> 12;
-	v5 = BYTE1(magicWord) & 0xF;
+	
+	v5 = BYTE1(magicWord) & 0xF;  // lower half of the first byte of magic word.. 0x1300 = 3, 0x1400 = 4, if it's a 3 then it's gmlan... all others anything else..
+//	printf("v5 is " + v5);
 	BYTE3(magicWord) = (_WORD)magicWord >> 12;
+//	printf( "v4: 0x%X  v5: 0x%X  BYTE3: 0x%X\n", v4, v5, BYTE3(magicWord));
 	if ( ptr_Key )
 	{
 		if ( (BYTE)magicWord )
 		{
-			v7 = 0xD * (unsigned __int8)magicWord;
+			v7 = 0xD * (unsigned __int8)magicWord;  // algo number* 0xD
 			v16 = 4;
 			while ( 1 )
 			{
@@ -171,6 +200,7 @@ int CalcKey(unsigned short  seed/*Seed*/, unsigned short  magicWord/*algo #*/, u
 				{
 					LOBYTE(v9) = Class2[v7];
 					v8 = (char *)&Class2[v7 + 1];
+				//	if (debug) printf("Class 2 selected\n");
 				}
 				else
 				{
@@ -178,14 +208,17 @@ int CalcKey(unsigned short  seed/*Seed*/, unsigned short  magicWord/*algo #*/, u
 					{
 						LOBYTE(v9) = GM_LAN[v7];
 						v8 = (char *)&GM_LAN[v7 + 1];
+					//	if (debug) printf("GM Lan selected\n");
 					}
 					else
 					{
 						LOBYTE(v9) = GM_OTHER[v7];
 						v8 = (char *)&GM_OTHER[v7 + 1];
+					//	if (debug) printf("GM other selected\n");
 					}
 				}
 				v9 = (unsigned __int8)v9;
+				// if (debug) printf("v9 is  0x%X\n", v9);
 				if ( (unsigned __int8)v9 > (signed int)0x52u )
 				{
 					v10 = v9 - 0x6B;
@@ -198,14 +231,14 @@ int CalcKey(unsigned short  seed/*Seed*/, unsigned short  magicWord/*algo #*/, u
 						v11 = v10 - 0xA;
 						if ( !v11 )
 						{
-							sub_1000110C((int)&seed, (int)v8);
+							sub_1000110C((int)&seed, (int)v8); // step 3 of algo 92
 						}
 						else
 						{
 							v12 = v11 - 9;
 							if ( !v12 )
 							{
-								sub_1000109C((int)&seed, (int)v8);
+								sub_1000109C((int)&seed, (int)v8);      // first step of algo 92
 							}
 							else
 							{
@@ -238,9 +271,11 @@ int CalcKey(unsigned short  seed/*Seed*/, unsigned short  magicWord/*algo #*/, u
 							break;
 						case 0x14:
 							add((int)&seed, (int)v8);
+
+
 							break;
 						case 0x2A:
-							sub_10001028((int)&seed, (int)v8);
+							sub_10001028((int)&seed, (int)v8); // algo 92 step 2
 							break;
 						case 0x37:
 							sub_1000115E((int)&seed, (int)v8);
@@ -282,6 +317,9 @@ int Menu (void)
 	printf( "6: Reegression Test\n" );
 	printf( "7: Redisplay Menu\n" );
 	printf( "8: Exit Program\n" );
+	printf( "9: Enter a Seed and Algo to see keys for each\n");
+	if (debug == true) printf("10: debugging enabled");
+	else printf( "10: debug flag\n");
 	return 0;
 }
 
@@ -305,6 +343,8 @@ void regressionTest()
 	if (NULL != dllHandle) 
 	{ 
 		//Get pointer to our function using GetProcAddress:
+		// S_KPtr = (fnRequestOperation);
+
 		S_KPtr = (SetSeedAndGetKey)GetProcAddress(dllHandle,
 			"?SetSeedAndGetKey@CSecurity@@QAEJGGPAG@Z");
 
@@ -332,7 +372,7 @@ void regressionTest()
 			if(log)
 				File = fopen("regression_test.txt","at");
 
-			for(type = 0; type<0x05; type++)
+			for(type = 0; type<0x03; type++)
 			{
 				switch(type)
 				{
@@ -389,8 +429,9 @@ void regressionTest()
 			}
 			if(log)
 			{
-				fclose(File);
+				
 				fprintf(File, "\n\n");
+				fclose(File);
 				printf("Log saved to regression_test.txt");
 			}
 		}
@@ -426,6 +467,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			int a, type, keyin, success, i;
 			char kbuff[0x80];
 			const unsigned char (*dtemp);
+			//boolean debug = false;
 			key = 0xffff;
 			keytmp = 0;
 			FILE * File;
@@ -434,203 +476,301 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			printf( "\n\nGM Seed/Key Tester v2.62\nCopyright 2009-2019 Tim Milliken.\n\n" );
 			Menu();
 
-			while(1)
+			while (1)
 			{
-				printf( "\nCommand:  ");
+				printf("\nCommand:  ");
 				gets_s(kbuff, 128);
-				printf( "\n");
+				printf("\n");
 
-				keyin = strtol( kbuff , NULL , 10 );
+				keyin = strtol(kbuff, NULL, 10);
 
 				switch (keyin)
 				{
 
 				case 1:
-					{
-						printf( "Seed: ");
-						gets_s(kbuff, 128);
-						seed = strtol( kbuff , NULL , 16 );
-						printf( "Algorithm: ");
-						gets_s(kbuff, 128);
-						a = strtol( kbuff , NULL , 16 );
-						magic = (magic | a);
-						CalcKey ( seed, magic, &key); 
-						printf( "Seed: 0x%X  Key: 0x%X  Algorithm: 0x%X\n" , seed,key,a );
-						break;
-					}
+				{
+					printf("Seed: ");
+					gets_s(kbuff, 128);
+					seed = strtol(kbuff, NULL, 16);
+					printf("Algorithm: ");
+					gets_s(kbuff, 128);
+					a = strtol(kbuff, NULL, 16);
+					unsigned short magicShort = (magic | (a & 0xFF));
+					printf("magicShort is 0x%X\n", magicShort);
+					CalcKey(seed, magicShort, &key);
+					printf("Seed: 0x%X  Key: 0x%X  Algorithm: 0x%X\n", seed, key, a);
+					break;
+				}
 
 				case 2:
+				{
+					printf("Seed: ");
+					gets_s(kbuff, 128);
+					seed = strtol(kbuff, NULL, 16);
+					File = fopen("sweep.txt", "at");
+					if (File != NULL)
 					{
-						printf( "Seed: ");
-						gets_s(kbuff, 128);
-						seed = strtol( kbuff , NULL , 16 );
-						File = fopen("sweep.txt","at");
-						if (File != NULL)
+						for (a = 0; a <= 256; a++)
 						{
-							for (a = 0;a<=256;a++)
-							{
-								//generate_key ( &seed, &key, a, type); 
-								fprintf( File,"Seed: 0x%X  Key: 0x%X  Algorithm: 0x%X\n" , seed,key,a );
-							}
-							fprintf(File, "\n\n");
-							printf("Log saved to sweep.txt");
+							//generate_key ( &seed, &key, a, type); 
+							unsigned short magicShort = (magic | (a & 0xFF));
+							CalcKey(seed, magicShort, &key);
+							fprintf(File, "Seed: 0x%X  Key: 0x%X  Algorithm: 0x%X\n", seed, key, a);
 						}
-						fclose(File);
-						break;
+						fprintf(File, "\n\n");
+						printf("Log saved to sweep.txt");
 					}
+					fclose(File);
+					break;
+				}
 
 				case 3:
+				{
+					printf("0 = CLASS2, 1 = Keyword2000, 2 = GMLAN, 3 = RGM_LAN_250KBd, 4 = KWP2000_on_CAN\n");
+					printf("Type [0/1/2/3/4]: ");
+					gets_s(kbuff, 128);
+					type = strtol(kbuff, NULL, 16);
+					switch (type)
 					{
-						printf("0 = CLASS2, 1 = Keyword2000, 2 = GMLAN, 3 = RGM_LAN_250KBd, 4 = KWP2000_on_CAN\n");
-						printf( "Type [0/1/2/3/4]: ");
-						gets_s(kbuff, 128);
-						type = strtol( kbuff , NULL , 16 );
-						switch(type)
-						{
-						case(0):
-							magic = CLASS2;
-							break;
-						case(1):
-							magic = Keyword2000;
-							break;
-						case(2):
-							magic = GMLAN;
-							break;
-						case(3):
-							magic = RGM_LAN_250KBd;
-							break;
-						case(4):
-							magic = KWP2000_on_CAN;
-							break;
-						default:
-							magic = CLASS2;
-							break;
-						}
-
+					case(0):
+						magic = CLASS2;
+						break;
+					case(1):
+						magic = Keyword2000;
+						break;
+					case(2):
+						magic = GMLAN;
+						break;
+					case(3):
+						magic = RGM_LAN_250KBd;
+						break;
+					case(4):
+						magic = KWP2000_on_CAN;
+						break;
+					default:
+						magic = CLASS2;
 						break;
 					}
 
+					break;
+				}
+
 				case 4:						// needs to be fixed, will stop on 1st match when there could be multiple matches
+				{
+					a = 0;
+					success = 0;
+
+					magic = CLASS2;
+					printf("Seed: ");
+					gets_s(kbuff, 128);
+					seed = strtol(kbuff, NULL, 16);
+					printf("Key: ");
+					gets_s(kbuff, 128);
+					keytmp = strtol(kbuff, NULL, 16);
+					printf("Searching... ");
+					while (success != 1 && a <= 256)
 					{
-						a=0;
-						success = 0;
-						printf( "Seed: ");
-						gets_s(kbuff, 128);
-						seed = strtol( kbuff , NULL , 16 );
-						printf( "Key: ");
-						gets_s(kbuff, 128);
-						keytmp = strtol( kbuff , NULL , 16 );
+						//		printf("\b-\b\\\b|\b/"); should spin cursor.. but way too damn fast on my machine
+						//generate_key ( &seed, &key, a, type); 
+						unsigned short magicShort = (magic | (a & 0xFF));
+						CalcKey(seed, magicShort, &key);
+						a++;
+						if (keytmp == key)
+							success = 1;
+					}
+					if (!success)
+						printf("\nDid not find Seed/Key pair using all Algorithms and CLASS 2 Interpreter\n");
+
+					else
+					{
+						printf("\nSuccess!!! Found Seed/Key pair using all Algorithms and CLASS 2 Interpreter\n");
+						printf("\nSeed: 0x%X  Key: 0x%X\n", seed, key);
+						printf("Algorithm 0x%X: ", a - 1);
+						for (i = 0; i <= 11; i++)
+						{
+							//dtemp = &old_array[a-1][i];
+						//	printf("0x%X ", (*dtemp));
+						}
+					}
+					if (!success)
+					{
+						printf("\nSwitching Interpreter type..\n");
 						printf("Searching... ");
-						while( success != 1 && a<=256)
+						//	type = 1;
+						magic = Keyword2000;
+						a = 0;
+						while (success != 1 && a <= 256)
 						{
 							//		printf("\b-\b\\\b|\b/"); should spin cursor.. but way too damn fast on my machine
 							//generate_key ( &seed, &key, a, type); 
+							unsigned short magicShort = (magic | (a & 0xFF));
+							CalcKey(seed, magicShort, &key);
 							a++;
 							if (keytmp == key)
 								success = 1;
 						}
 						if (!success)
-							printf("\nDid not find Seed/Key pair using all Algorithms and Class 2 Interpreter\n");
+							printf("\nDid not find Seed/Key pair using all Algorithms and Keyword 2000 Interpreter\n");
 
 						else
 						{
-							printf( "\nSeed: 0x%X  Key: 0x%X\n" , seed,key);
-							printf("Algorithm 0x%X: ",a-1);
-							for (i = 0; i<=11; i++)
+							printf("\nSuccess!!! Found Seed/Key pair using all Algorithms and Keyword 2000 Interpreter\n");
+							printf("\nSeed: 0x%X  Key: 0x%X\n", seed, key);
+							printf("Algorithm 0x%X: ", a - 1);
+
+							for (i = 0; i <= 11; i++)
 							{
-								//dtemp = &old_array[a-1][i];
-								printf("0x%X ", (*dtemp));
+								//dtemp = &new_array[a-1][i];
+							//	printf("0x%X ", (*dtemp));
 							}
+						}
+					}
+					if (!success)
+					{
+						printf("\nSwitching Interpreter type..\n");
+						printf("Searching... ");
+						//	type = 2;
+						a = 0;
+						magic = GMLAN;
+						while (success != 1 && a <= 256)
+						{
+							//		printf("\b-\b\\\b|\b/"); should spin cursor.. but way too damn fast on my machine
+							//generate_key ( &seed, &key, a, type); 
+							unsigned short magicShort = (magic | (a & 0xFF));
+							CalcKey(seed, magicShort, &key);
+							a++;
+							if (keytmp == key)
+								success = 1;
 						}
 						if (!success)
+							printf("\nDid not find Seed/Key pair using all Algorithms and GM LAN Interpreter\n");
+
+						else
 						{
-							printf("\nSwitching Interpreter type..\n");
-							printf("Searching... ");
-							type = 1;
-							a = 0;
-							while( success != 1 && a<=256)
+							printf("\nSuccess!!! Found Seed/Key pair using all Algorithms and GM LAN Interpreter\n");
+							printf("\nSeed: 0x%X  Key: 0x%X\n", seed, key);
+							printf("Algorithm 0x%X: ", a - 1);
+							int dtemp;
+							for (i = 0; i <= 11; i++)
 							{
-								//		printf("\b-\b\\\b|\b/"); should spin cursor.. but way too damn fast on my machine
-								//generate_key ( &seed, &key, a, type); 
-								a++;
-								if (keytmp == key)
-									success = 1;
+								dtemp = a * i; // &GM_LAN[a - 1][i];
+							//	printf("0x%X ", (*dtemp));
 							}
-							if (!success)
-								printf("\nDid not find Seed/Key pair using all Algorithms and GMLAN Interpreter\n");
+						}
+					}
 
-							else
-							{
-								printf( "\nSeed: 0x%X  Key: 0x%X\n" , seed,key);
-								printf("Algorithm 0x%X: ",a-1);
-
-								for (i = 0; i<=11; i++)
-								{
-									//dtemp = &new_array[a-1][i];
-									printf("0x%X ", (*dtemp));
-								}
-							}
+					if (!success)
+					{
+						printf("\nSwitching Interpreter type..\n");
+						printf("Searching... ");
+						//	type = 2;
+						a = 0;
+						magic = RGM_LAN_250KBd;
+						while (success != 1 && a <= 256)
+						{
+							//		printf("\b-\b\\\b|\b/"); should spin cursor.. but way too damn fast on my machine
+							//generate_key ( &seed, &key, a, type); 
+							unsigned short magicShort = (magic | (a & 0xFF));
+							CalcKey(seed, magicShort, &key);
+							a++;
+							if (keytmp == key)
+								success = 1;
 						}
 						if (!success)
+							printf("\nDid not find Seed/Key pair using all Algorithms and RGM LAN Interpreter\n");
+
+						else
 						{
-							printf("\nSwitching Interpreter type..\n");
-							printf("Searching... ");
-							type = 2;
-							a = 0;
-							while( success != 1 && a<=256)
-							{
-								//		printf("\b-\b\\\b|\b/"); should spin cursor.. but way too damn fast on my machine
-								//generate_key ( &seed, &key, a, type); 
-								a++;
-								if (keytmp == key)
-									success = 1;
-							}
-							if (!success)
-								printf("\nDid not find Seed/Key pair using all Algorithms and GM_BOSCH Interpreter\n");
+							printf("\nSuccess!!! Found Seed/Key pair using all Algorithms and RGM LAN Interpreter\n");
+							printf("\nSeed: 0x%X  Key: 0x%X\n", seed, key);
+							printf("Algorithm 0x%X: ", a - 1);
 
-							else
+							for (i = 0; i <= 11; i++)
 							{
-								printf( "\nSeed: 0x%X  Key: 0x%X\n" , seed,key);
-								printf("Algorithm 0x%X: ",a-1);
-
-								for (i = 0; i<=11; i++)
-								{
-									//dtemp = &GM_BOSCH[a-1][i];
-									printf("0x%X ", (*dtemp));
-								}
+								//dtemp = &GM_BOSCH[a-1][i];
+							//	printf("0x%X ", (*dtemp));
 							}
 						}
-						type = 0; // go back to default interpreter
+					}
 
-						break;
-					} 
+					if (!success)
+					{
+						printf("\nSwitching Interpreter type..\n");
+						printf("Searching... ");
+						//	type = 2;
+						a = 0;
+						magic = KWP2000_on_CAN;
+						while (success != 1 && a <= 256)
+						{
+							//		printf("\b-\b\\\b|\b/"); should spin cursor.. but way too damn fast on my machine
+							//generate_key ( &seed, &key, a, type); 
+							unsigned short magicShort = (magic | (a & 0xFF));
+							CalcKey(seed, magicShort, &key);
+							a++;
+							if (keytmp == key)
+								success = 1;
+						}
+						if (!success)
+							printf("\nDid not find Seed/Key pair using all Algorithms and KWP2000 Interpreter\n");
+
+						else
+						{
+							printf("\nSuccess!!! Found Seed/Key pair using all Algorithms and KWP2000 Interpreter\n");
+							printf("\nSeed: 0x%X  Key: 0x%X\n", seed, key);
+							printf("Algorithm 0x%X: ", a - 1);
+
+							for (i = 0; i <= 11; i++)
+							{
+								//dtemp = &GM_BOSCH[a-1][i];
+							//	printf("0x%X ", (*dtemp));
+							}
+						}
+					}
+
+
+
+
+
+
+
+
+
+					// type = 0; // go back to default interpreter
+
+					break;
+				}
 
 				case 5:
+				{
+					printf("Algorithm: ");
+					gets_s(kbuff, 128);
+					a = strtol(kbuff, NULL, 16);
+					printf("Algorithm 0x%X: ", a);
+					unsigned char dtemp;
+					int both;
+					if (type != 0)
 					{
-						printf( "Algorithm: ");
-						gets_s(kbuff, 128);
-						a = strtol( kbuff , NULL , 16 );
-						printf("Algorithm 0x%X: ",a);
-						if (type != 0)
+						for (i = 0; i <= 11; i++)
 						{
-							for (i = 0; i<=11; i++)
-							{
-								//dtemp = &new_array[a][i];
-								printf("0x%X ", (*dtemp));
-							}
+							both = a * i;
+							dtemp = GM_LAN[both];
+							printf("0x%X ", (dtemp));
+							dtemp = a * i;
+							//	printf(&GM_LAN[dtemp]);
 						}
-						else
-						{
-							for (i = 0; i<=11; i++)
-							{
-								//dtemp = &old_array[a][i];
-								printf("0x%X ", (*dtemp));
-							}
-
-						}
-						//Menu();
 					}
-					break;
+					else
+					{
+						for (i = 0; i <= 11; i++)
+						{
+							//	dtemp = &old_array[a][i];
+							//	printf("0x%X ", (*dtemp));
+						}
+
+					}
+					//Menu();
+				}
+				break;
 				case 6:
 					regressionTest();
 					break;
@@ -642,10 +782,42 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 				case 8:
 					exit(1);
 					break;
-				default: 
+
+				case 9: {
+
+					printf("Seed: ");
+					gets_s(kbuff, 128);
+					seed = strtol(kbuff, NULL, 16);
+					printf("Algorithm: ");
+					gets_s(kbuff, 128);
+					a = strtol(kbuff, NULL, 16);
+					unsigned int magicarray[] = { CLASS2,Keyword2000,GMLAN, RGM_LAN_250KBd, KWP2000_on_CAN };
+					string magicstring[] = { "CLASS2","Keyword2000","GMLAN", "RGM_LAN_250KBd", "KWP2000_on_CAN" };
+					for (int magicN = 0; magicN < 5; magicN++) {
+
+						magic = magicarray[magicN];
+						unsigned short magicShort = (magic | (a & 0xFF));
+						printf("magicShort is 0x%X", magicShort);
+						printf(" and Interpretor is %s\n", magicstring[magicN].c_str());
+						CalcKey(seed, magicShort, &key);
+						printf("Seed: 0x%X  Key: 0x%X  Algorithm: 0x%X\n\n", seed, key, a);
+					}
+
 					break;
 				}
 
+				default:
+					break;
+				
+				case 10:
+				{
+					debug = !debug;
+					printf("debug enabled/disabled");
+					Menu();
+					//break;
+				}
+
+			}
 			}
 		}
 	}
